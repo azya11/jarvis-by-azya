@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+.mypy_cache/
+
+# VS Code
+.vscode/
+
+# Environment Variables
+.env
+
+# Generated Audio
+response.mp3
+
+# System
+.DS_Store
+Thumbs.db

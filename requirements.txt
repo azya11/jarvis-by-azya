@@ -1,0 +1,11 @@
+SpeechRecognition
+pyttsx3
+pyaudio
+thefuzz
+edge-tts
+pygame
+openai
+python-dotenv
+selenium
+webdriver-manager
+
