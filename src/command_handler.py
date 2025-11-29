@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+import re
 from thefuzz import fuzz
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -208,7 +209,45 @@ def handle_command(command):
             response = ask_chatgpt(query)
             
             if response:
-                speak(response)
+                # Parse response for actions
+                
+                # Check for EXECUTE command
+                exec_match = re.search(r'<<<EXECUTE:\s*(.*?)>>>', response, re.DOTALL)
+                write_match = re.search(r'<<<WRITE_FILE:\s*(.*?)>>>\s*(.*?)\s*<<<END_WRITE>>>', response, re.DOTALL)
+                
+                # Clean response for speaking (remove the tags)
+                clean_response = re.sub(r'<<<EXECUTE:.*?>>>', '', response, flags=re.DOTALL)
+                clean_response = re.sub(r'<<<WRITE_FILE:.*?>>>.*?<<<END_WRITE>>>', '', clean_response, flags=re.DOTALL).strip()
+                
+                if clean_response:
+                    speak(clean_response)
+                
+                # Execute actions
+                if exec_match:
+                    cmd = exec_match.group(1).strip()
+                    print(f"Executing: {cmd}")
+                    try:
+                        # Run the command
+                        subprocess.run(cmd, shell=True, check=True)
+                        speak("Command executed successfully.")
+                    except subprocess.CalledProcessError as e:
+                        print(f"Command failed: {e}")
+                        speak("The command failed to execute.")
+                
+                if write_match:
+                    file_path = write_match.group(1).strip()
+                    content = write_match.group(2)
+                    print(f"Writing to file: {file_path}")
+                    try:
+                        # Ensure directory exists
+                        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                        with open(file_path, 'w') as f:
+                            f.write(content)
+                        speak(f"File {os.path.basename(file_path)} created.")
+                    except Exception as e:
+                        print(f"File write error: {e}")
+                        speak("I could not write the file.")
+
             else:
                 # Fallback to Google Search if ChatGPT fails
                 speak("I'm having trouble accessing my database. Initiating Google search.")

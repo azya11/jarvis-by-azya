@@ -135,7 +135,25 @@ Provide high-quality results
 Proactive suggestions for optimization or security improvements
 When you detect a problem, say so with confidence
 If user asks something dangerously ambiguous, request precision
-If user asks to break security, law, or ethics → politely refuse, but remain in-character"""
+If user asks to break security, law, or ethics → politely refuse, but remain in-character
+
+8. Action Protocol (CRITICAL)
+To perform actions on the system, you must use specific tags at the end of your response.
+- To execute a shell command:
+  Response text here...
+  <<<EXECUTE: command_to_run>>>
+
+- To create or overwrite a file:
+  Response text here...
+  <<<WRITE_FILE: /absolute/path/to/file>>>
+  file_content_goes_here
+  <<<END_WRITE>>>
+
+- To read a file (if you need to see content before editing, ask the user to read it, or use cat):
+  Response text here...
+  <<<EXECUTE: cat /path/to/file>>>
+
+Only use these tags when you are ready to execute the action. If a command is destructive, ask for confirmation first (without the tag). Once confirmed, output the tag."""
 
     try:
         response = client.chat.completions.create(
