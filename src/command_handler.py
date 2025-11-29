@@ -11,6 +11,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from src.utils import speak
 from src.chatgpt import ask_chatgpt
+from src.system_control import get_installed_apps, get_projects, open_application, open_project
+from thefuzz import process
 
 def is_match(command, trigger, threshold=80):
     """
@@ -79,20 +81,20 @@ def handle_command(command):
                     speak(f"Opening your latest project: {project_name}")
                     subprocess.Popen(['code', latest_project])
 
-                    # Check for git repository and get last commit
+                    # Check for git repository and get last 2 commits
                     if os.path.exists(os.path.join(latest_project, ".git")):
                         try:
-                            # Get the last commit message (subject only)
+                            # Get the last 2 commit messages
                             result = subprocess.run(
-                                ['git', 'log', '-1', '--pretty=format:%s'], 
+                                ['git', 'log', '-2', '--pretty=format:%s'], 
                                 cwd=latest_project, 
                                 capture_output=True, 
                                 text=True,
                                 check=True
                             )
-                            commit_msg = result.stdout.strip()
-                            if commit_msg:
-                                speak(f"The last change was: {commit_msg}")
+                            commits = result.stdout.strip().split('\n')
+                            if commits:
+                                speak(f"The last changes were: {'. '.join(commits)}")
                         except Exception as e:
                             print(f"Git error: {e}")
                             speak("I couldn't read the git history.")
@@ -101,6 +103,63 @@ def handle_command(command):
             except Exception as e:
                 print(f"Error opening project: {e}")
                 speak("I encountered an error while trying to open your project.")
+
+    elif is_match(command, 'open project'):
+        # Extract project name from command
+        # "Jarvis open project watchdna" -> "watchdna"
+        target = command.lower().replace("jarvis", "").replace("open project", "").strip()
+        
+        if not target:
+            speak("Which project would you like me to open?")
+        else:
+            projects_dir = "/home/azya11/source_azya"
+            projects = get_projects(projects_dir)
+            
+            # Fuzzy match the project name
+            # process.extractOne returns (match, score)
+            match, score = process.extractOne(target, projects.keys())
+            
+            if score > 80:
+                speak(f"Opening project {match}")
+                project_path = projects[match]
+                open_project(project_path)
+                
+                # Check for git repository and get last 2 commits
+                if os.path.exists(os.path.join(project_path, ".git")):
+                    try:
+                        # Get the last 2 commit messages
+                        result = subprocess.run(
+                            ['git', 'log', '-2', '--pretty=format:%s'], 
+                            cwd=project_path, 
+                            capture_output=True, 
+                            text=True,
+                            check=True
+                        )
+                        commits = result.stdout.strip().split('\n')
+                        if commits:
+                            speak(f"The last changes were: {'. '.join(commits)}")
+                    except Exception as e:
+                        print(f"Git error: {e}")
+                        speak("I couldn't read the git history.")
+            else:
+                speak(f"I couldn't find a project named {target}. The closest match was {match}.")
+
+    elif is_match(command, 'open app') or is_match(command, 'launch'):
+        # Extract app name
+        # "Jarvis open app firefox" -> "firefox"
+        target = command.lower().replace("jarvis", "").replace("open app", "").replace("launch", "").strip()
+        
+        if not target:
+            speak("Which application should I open?")
+        else:
+            apps = get_installed_apps()
+            match, score = process.extractOne(target, apps.keys())
+            
+            if score > 80:
+                speak(f"Launching {match}")
+                open_application(match, apps)
+            else:
+                speak(f"I couldn't find an application named {target}.")
 
     elif is_match(command, 'play music'):
         speak("Your playlist is always perfect sir.")

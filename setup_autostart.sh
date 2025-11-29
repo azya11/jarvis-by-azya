@@ -23,7 +23,7 @@ cat > "$DESKTOP_FILE" <<EOL
 Type=Application
 Name=Jarvis Voice Assistant
 Comment=AI Voice Assistant
-Exec=$VENV_PYTHON $MAIN_CMD
+Exec=$PROJECT_DIR/run.sh
 Path=$PROJECT_DIR
 Terminal=false
 Hidden=false
