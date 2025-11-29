@@ -3,6 +3,27 @@ import asyncio
 import edge_tts
 import pygame
 import os
+import sys
+from ctypes import *
+from contextlib import contextmanager
+
+# Define error handler to suppress ALSA warnings
+ERROR_HANDLER_FUNC = CFUNCTYPE(None, c_char_p, c_int, c_char_p, c_int, c_char_p)
+
+def py_error_handler(filename, line, function, err, fmt):
+    pass
+
+c_error_handler = ERROR_HANDLER_FUNC(py_error_handler)
+
+@contextmanager
+def noalsaerr():
+    try:
+        asound = cdll.LoadLibrary('libasound.so')
+        asound.snd_lib_error_set_handler(c_error_handler)
+        yield
+        asound.snd_lib_error_set_handler(None)
+    except:
+        yield
 
 # Initialize pygame mixer for audio playback
 try:
@@ -44,19 +65,27 @@ def speak(text):
 def listen():
     """Listens to the microphone and returns the recognized text."""
     r = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("Listening...")
-        r.adjust_for_ambient_noise(source)
+    
+    # Suppress ALSA errors during microphone initialization
+    with noalsaerr():
         try:
-            audio = r.listen(source, timeout=5, phrase_time_limit=5)
-            print("Recognizing...")
-            query = r.recognize_google(audio, language='en-US')
-            print(f"User said: {query}\n")
-            return query.lower()
-        except sr.WaitTimeoutError:
-            return None
-        except sr.UnknownValueError:
-            return None
-        except sr.RequestError as e:
-            print(f"Could not request results; {e}")
+            source = sr.Microphone()
+            with source:
+                print("Listening...")
+                r.adjust_for_ambient_noise(source)
+                try:
+                    audio = r.listen(source, timeout=5, phrase_time_limit=5)
+                    print("Recognizing...")
+                    query = r.recognize_google(audio, language='en-US')
+                    print(f"User said: {query}\n")
+                    return query.lower()
+                except sr.WaitTimeoutError:
+                    return None
+                except sr.UnknownValueError:
+                    return None
+                except sr.RequestError as e:
+                    print(f"Could not request results; {e}")
+                    return None
+        except Exception as e:
+            print(f"Microphone error: {e}")
             return None
